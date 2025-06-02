@@ -1,56 +1,84 @@
 #include <SFML/Graphics.hpp>
-
-
+#include <iostream>
 
 
 void clear(sf::RenderWindow& win) {
     win.clear();
 }
 
+class Stvorec {
+public:
+    float width = 40.0f;
+    sf::Vector2i position;
+
+    sf::RectangleShape rectangle;
+
+    Stvorec(int x, int y) {
+        this->position.x = x;
+        this->position.y = y;
+        this->rectangle = sf::RectangleShape({this->width, this->width});
+        this->rectangle.setPosition(sf::Vector2f(position));
+        this->rectangle.setFillColor(sf::Color::Blue);
+    }
+
+    void setPosition(sf::Vector2i np) {
+        this->position = np;
+        this->rectangle.setPosition(sf::Vector2f(this->position));
+    }
+
+    bool collide(const sf::Vector2i a) const {
+        return a.x >= this->position.x && a.x <= this->position.x + this->width && a.y >= this->position.y && a.y <= this->position.y + this->width;
+    }
+};
+
 int main() {
-    sf::RenderWindow window(sf::VideoMode(512, 512), "Flappy Bird", sf::Style::Close | sf::Style::Titlebar | sf::Style::Resize);
-    window.setFramerateLimit(144);
-    sf::RectangleShape cube(sf::Vector2f(100.0f, 100.0f));
-    cube.setFillColor(sf::Color::Blue);
+    sf::RenderWindow window(sf::VideoMode({500, 500}), "Flappy Birds");
+    window.setFramerateLimit(180);
+    sf::Clock clock;
+    sf::Time last = clock.getElapsedTime();
+
+
+    Stvorec s(100, 100);
 
 
     int fps = 0;
-    float speed = 3.0f;
-    sf::Clock clock;
-    sf::Time time = clock.getElapsedTime();
     while (window.isOpen()) {
 
-        sf::Event ev;
-
-        while (window.pollEvent(ev)) {
-            if (ev.type == sf::Event::Closed) {
+        while (auto event = window.pollEvent()) {
+            if (event->is<sf::Event::Closed>()) {
                 window.close();
             }
+
+
         }
 
-        clear(window);
+        auto pressed = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
+        auto mouse = sf::Mouse::getPosition(window);
 
-        window.draw(cube);
+
+        if (pressed && s.collide(mouse)) {
+            s.rectangle.setFillColor(sf::Color::Red);
+            s.setPosition({mouse.x - (int)s.width / 2, mouse.y - (int)s.width / 2});
+        } else {
+            s.rectangle.setFillColor(sf::Color::Blue);
+        }
+
+
+
+        sf::Time current = clock.getElapsedTime();
+        fps++;
+        if (current.asSeconds() - last.asSeconds() >= 1.0f) {
+            std::cout << "FPS: " << fps << std::endl;
+            fps = 0;
+            last = current;
+        }
+
+        window.clear();
+        window.draw(s.rectangle);
+
         window.display();
 
-        fps++;
-        sf::Time current = clock.getElapsedTime();
-        if (current.asSeconds() - time.asSeconds() >= 1.0f) {
-            printf("FPS: %i \n", fps);
-            fps = 0;
-            time = current;
-        }
-
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
-            cube.move(0.0f, -speed);
-        }
-
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
-            cube.move(0.0f, speed);
-        }
-
     }
-
 
     return 0;
 };
