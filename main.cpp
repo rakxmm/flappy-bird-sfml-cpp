@@ -32,7 +32,7 @@ public:
 };
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode({500, 500}), "Flappy Birds");
+    sf::RenderWindow window(sf::VideoMode({500, 500}), "Flappy Hampt");
     window.setFramerateLimit(180);
     sf::Clock clock;
     sf::Time last = clock.getElapsedTime();
