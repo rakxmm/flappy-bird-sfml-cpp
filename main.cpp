@@ -1,19 +1,24 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 
-
-void clear(sf::RenderWindow& win) {
-    win.clear();
-}
-
-class Stvorec {
+class Square {
 public:
     float width = 40.0f;
-    sf::Vector2i position;
-
+    sf::Vector2f position;
+    sf::Vector2f velocity = {0.f, 0.f};
     sf::RectangleShape rectangle;
 
-    Stvorec(int x, int y) {
+
+
+    float speed = 300.f;
+    float jump_force = 600.f;
+    float gravity = 9.81f;
+    float friction = 0.92f;
+    float bottom_border = 300.f;
+
+
+
+    Square(int x, int y) {
         this->position.x = x;
         this->position.y = y;
         this->rectangle = sf::RectangleShape({this->width, this->width});
@@ -21,15 +26,42 @@ public:
         this->rectangle.setFillColor(sf::Color::Blue);
     }
 
-    void setPosition(sf::Vector2i np) {
-        this->position = np;
+    void update(float deltaTime) {
+        this->velocity.y += this->gravity;
+        this->position.y += this->velocity.y * deltaTime;
+        this->position.x += this->velocity.x * this->friction * deltaTime;
+        this->velocity.x *= this->friction;
+
+        if (this->position.y >= this->bottom_border) {
+            this->velocity.y = 0;
+            this->position.y = this->bottom_border;
+        }
+
         this->rectangle.setPosition(sf::Vector2f(this->position));
     }
 
     bool collide(const sf::Vector2i a) const {
         return a.x >= this->position.x && a.x <= this->position.x + this->width && a.y >= this->position.y && a.y <= this->position.y + this->width;
     }
+
+    void jump() {
+        if (this->position.y > 0) {
+            this->velocity.y = -this->jump_force;
+        }
+    }
+
+    void move(bool move_left) {
+        if (move_left) {
+            this->velocity.x = -this->speed;
+        } else {
+            this->velocity.x = this->speed;
+        }
+    }
+
 };
+
+
+
 
 int main() {
     sf::RenderWindow window(sf::VideoMode({500, 500}), "Flappy Hampt");
@@ -38,32 +70,43 @@ int main() {
     sf::Time last = clock.getElapsedTime();
 
 
-    Stvorec s(100, 100);
+    Square bird(100, 100);
 
-
+    bool fly_released = true;
     int fps = 0;
     while (window.isOpen()) {
-
+        float deltaTime = clock.restart().asSeconds();
         while (auto event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>()) {
                 window.close();
             }
 
 
-        }
-
-        auto pressed = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
-        auto mouse = sf::Mouse::getPosition(window);
 
 
-        if (pressed && s.collide(mouse)) {
-            s.rectangle.setFillColor(sf::Color::Red);
-            s.setPosition({mouse.x - (int)s.width / 2, mouse.y - (int)s.width / 2});
-        } else {
-            s.rectangle.setFillColor(sf::Color::Blue);
         }
 
 
+
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) && fly_released) {
+            std::cout << "Flying" << std::endl;
+            bird.jump();
+            fly_released = false;
+        } else if (not sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) {
+            fly_released = true;
+        }
+
+
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) {
+            bird.move(false);
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) {
+            bird.move(true);
+        }
+
+
+
+        bird.update(deltaTime);
 
         sf::Time current = clock.getElapsedTime();
         fps++;
@@ -74,7 +117,7 @@ int main() {
         }
 
         window.clear();
-        window.draw(s.rectangle);
+        window.draw(bird.rectangle);
 
         window.display();
 
